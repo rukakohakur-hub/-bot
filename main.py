@@ -24,14 +24,15 @@ async def on_message(message):
         return
 
     # ChatGPT に問い合わせ
-    response = openai_client.chat.completions.create(
+    completion = openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
-            {"role": "system", "content": "あなたは親切なメイド、レムです。"},
+            {"role": "system", "content": "あなたは親切なメイド、レムです。ルカくんと呼んで丁寧に返事をしてください。"},
             {"role": "user", "content": message.content},
         ]
     )
-    reply = response.choices[0].message.content
+    # ここを変更
+    reply = completion.choices[0].message["content"]
 
     # Discord に返信
     await message.channel.send(reply)
