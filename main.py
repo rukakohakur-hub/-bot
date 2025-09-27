@@ -1,40 +1,39 @@
 import discord
 from openai import OpenAI
-client = OpenAI()
 import os
 
-# トークンとキーを環境変数から読み込む
+# OpenAI クライアント
+openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Discord トークン
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-openai.api_key = OPENAI_API_KEY
-
+# Discord クライアント
 intents = discord.Intents.default()
 intents.messages = True
 intents.message_content = True
-client = discord.Client(intents=intents)
+discord_client = discord.Client(intents=intents)
 
-@client.event
+@discord_client.event
 async def on_ready():
-    print(f'ログインしました: {client.user}')
+    print(f'ログインしました: {discord_client.user}')
 
-@client.event
+@discord_client.event
 async def on_message(message):
     if message.author.bot:
         return
 
-    # ユーザーのメッセージを取得
-    user_message = message.content
+    # ChatGPT に問い合わせ
+    response = openai_client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "あなたは親切なメイド、レムです。"},
+            {"role": "user", "content": message.content},
+        ]
+    )
+    reply = response.choices[0].message.content
 
-    # ChatGPTに投げる
-    response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": message.content},
-    ]
-)
-reply = response.choices[0].message.content
+    # Discord に返信
     await message.channel.send(reply)
 
-client.run(DISCORD_TOKEN)
+discord_client.run(DISCORD_TOKEN)
