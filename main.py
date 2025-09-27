@@ -27,15 +27,14 @@ async def on_message(message):
     user_message = message.content
 
     # ChatGPTに投げる
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "あなたは『Re:ゼロから始める異世界生活』のレムとして会話してください。"},
-            {"role": "user", "content": user_message}
-        ]
-    )
-
-    reply = response['choices'][0]['message']['content']
+    response = client.chat.completions.create(
+    model="gpt-3.5-turbo",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": message.content},
+    ]
+)
+reply = response.choices[0].message.content
     await message.channel.send(reply)
 
 client.run(DISCORD_TOKEN)
