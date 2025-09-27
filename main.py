@@ -1,5 +1,6 @@
 import discord
 from openai import OpenAI
+client = OpenAI()
 import os
 
 # トークンとキーを環境変数から読み込む
