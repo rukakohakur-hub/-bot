@@ -159,4 +159,13 @@ async def on_ready():
     print(f"ログインしました: {bot.user}")
     await update_list()
 
+import os
+
+TOKEN = os.getenv("DISCORD_TOKEN")
+
+if not TOKEN:
+    print("⚠️ TOKENが読み込めていません")
+else:
+    print("✅ TOKENが読み込めました")
+
 bot.run(TOKEN)
