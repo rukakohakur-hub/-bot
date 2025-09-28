@@ -1,13 +1,26 @@
+import threading
+from flask import Flask
 import discord
 from discord.ext import commands
 import sqlite3
 import os
 
-# ===== 設定 =====
-TOKEN = os.getenv("DISCORD_TOKEN")  # Render環境変数を使う
+# ===== Flask（だまし用Webサーバー） =====
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is running!"
+
+def run_web():
+    # Renderが確認できるようにポート10000で起動
+    app.run(host="0.0.0.0", port=10000)
+
+# ===== Discord Bot 設定 =====
+TOKEN = os.getenv("DISCORD_TOKEN")
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
-# ログ用チャンネルID（ルカくんの取得したやつ）
+# ログ用チャンネルID
 LOG_CHANNEL_ID = 1421840287000563724
 
 # ===== データベース初期化 =====
@@ -95,4 +108,6 @@ async def all_biomes(ctx):
 
 # ===== Bot起動 =====
 if __name__ == "__main__":
+    # Flaskを別スレッドで起動
+    threading.Thread(target=run_web).start()
     bot.run(TOKEN)
