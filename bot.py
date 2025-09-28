@@ -4,21 +4,24 @@ import sqlite3
 import os
 
 # ===== 設定 =====
-TOKEN = "YOUR_BOT_TOKEN"  # Renderの環境変数に設定してあれば自動で読み込む
+TOKEN = os.getenv("DISCORD_TOKEN")  # Render環境変数を使う
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
+# ログ用チャンネルID（ルカくんの取得したやつ）
+LOG_CHANNEL_ID = 1421840287000563724
+
 # ===== データベース初期化 =====
-with sqlite3.connect("biomes.db") as conn:
-    c = conn.cursor()
-    c.execute("""CREATE TABLE IF NOT EXISTS biomes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        x INTEGER,
-        y INTEGER,
-        z INTEGER,
-        user TEXT
-    )""")
-    conn.commit()
+conn = sqlite3.connect("biomes.db")
+c = conn.cursor()
+c.execute("""CREATE TABLE IF NOT EXISTS biomes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    x INTEGER,
+    y INTEGER,
+    z INTEGER,
+    user TEXT
+)""")
+conn.commit()
 
 # ===== 起動確認 =====
 @bot.event
@@ -29,22 +32,25 @@ async def on_ready():
 # ===== バイオーム登録 =====
 @bot.command()
 async def add_biome(ctx, name: str, x: int, y: int, z: int):
-    with sqlite3.connect("biomes.db") as conn:
-        c = conn.cursor()
-        c.execute(
-            "INSERT INTO biomes (name, x, y, z, user) VALUES (?, ?, ?, ?, ?)",
-            (name, x, y, z, str(ctx.author))
-        )
-        conn.commit()
+    c.execute("INSERT INTO biomes (name, x, y, z, user) VALUES (?, ?, ?, ?, ?)",
+              (name, x, y, z, str(ctx.author)))
+    conn.commit()
     await ctx.send(f"✅ バイオーム **{name}** を登録しました！（座標: {x}, {y}, {z}）")
+
+    # ログチャンネルに送信
+    log_channel = bot.get_channel(LOG_CHANNEL_ID)
+    if log_channel:
+        embed = discord.Embed(title="📝 新しいバイオームが登録されました！", color=0x95a5a6)
+        embed.add_field(name="バイオーム", value=name, inline=False)
+        embed.add_field(name="座標", value=f"({x}, {y}, {z})", inline=False)
+        embed.add_field(name="登録者", value=str(ctx.author), inline=False)
+        await log_channel.send(embed=embed)
 
 # ===== バイオーム一覧（最新5件） =====
 @bot.command()
 async def list_biomes(ctx):
-    with sqlite3.connect("biomes.db") as conn:
-        c = conn.cursor()
-        c.execute("SELECT name, x, y, z, user FROM biomes ORDER BY id DESC LIMIT 5")
-        rows = c.fetchall()
+    c.execute("SELECT name, x, y, z, user FROM biomes ORDER BY id DESC LIMIT 5")
+    rows = c.fetchall()
 
     if not rows:
         await ctx.send("📭 登録されているバイオームはまだありません。")
@@ -63,19 +69,15 @@ async def list_biomes(ctx):
 # ===== バイオーム削除 =====
 @bot.command()
 async def del_biome(ctx, biome_id: int):
-    with sqlite3.connect("biomes.db") as conn:
-        c = conn.cursor()
-        c.execute("DELETE FROM biomes WHERE id = ?", (biome_id,))
-        conn.commit()
+    c.execute("DELETE FROM biomes WHERE id = ?", (biome_id,))
+    conn.commit()
     await ctx.send(f"🗑️ バイオームID {biome_id} を削除しました。")
 
 # ===== 全部リスト =====
 @bot.command()
 async def all_biomes(ctx):
-    with sqlite3.connect("biomes.db") as conn:
-        c = conn.cursor()
-        c.execute("SELECT id, name, x, y, z, user FROM biomes ORDER BY id DESC")
-        rows = c.fetchall()
+    c.execute("SELECT id, name, x, y, z, user FROM biomes ORDER BY id DESC")
+    rows = c.fetchall()
 
     if not rows:
         await ctx.send("📭 登録されているバイオームはまだありません。")
@@ -93,5 +95,4 @@ async def all_biomes(ctx):
 
 # ===== Bot起動 =====
 if __name__ == "__main__":
-    TOKEN = os.getenv("DISCORD_TOKEN") or TOKEN
     bot.run(TOKEN)
