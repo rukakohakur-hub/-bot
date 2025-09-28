@@ -115,3 +115,5 @@ if __name__ == "__main__":
     # Flaskを別スレッドで起動
     threading.Thread(target=run_web).start()
     bot.run(TOKEN)
+for command in bot.commands:
+    print(f"📌 読み込まれたコマンド: {command}")
