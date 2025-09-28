@@ -16,14 +16,21 @@ omikuji_results = [
     "😱 大凶！？でも逆にレア運かも！？"
 ]
 
+class OmikujiButton(discord.ui.View):
+    @discord.ui.button(label="🎲 おみくじを引く", style=discord.ButtonStyle.primary)
+    async def omikuji_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        result = random.choice(omikuji_results)
+        await interaction.response.send_message(result, ephemeral=True)
+
 @bot.event
 async def on_ready():
     print(f"ログインしました: {bot.user}")
 
 @bot.command()
-async def omikuji(ctx):
-    result = random.choice(omikuji_results)
-    await ctx.send(result)
+async def setup(ctx):
+    """おみくじボタンを設置する"""
+    view = OmikujiButton()
+    await ctx.send("ここからおみくじを引けます👇", view=view)
 
 if __name__ == "__main__":
     TOKEN = os.environ.get("DISCORD_TOKEN")
