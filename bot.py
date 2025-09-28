@@ -75,7 +75,7 @@ async def refresh_button():
 
     # 新しいボタンを送信
     view = BiomeButton()
-    latest_message = await channel.send("⬇️ 新しい登録ボタン ⬇️", view=view)
+    latest_message = await channel.send("⬇️ ここを押して ⬇️", view=view)
 
 # ===== 起動時 =====
 @bot.event
