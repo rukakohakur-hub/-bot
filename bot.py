@@ -1,26 +1,21 @@
-import threading
-from flask import Flask
 import discord
 from discord.ext import commands
 import sqlite3
 import os
+from flask import Flask
 
-# ===== Flask（だまし用Webサーバー） =====
+# ===== Flask (Render対策) =====
 app = Flask(__name__)
 
-@app.route('/')
+@app.route("/")
 def home():
     return "Bot is running!"
 
-def run_web():
-    # Renderが確認できるようにポート10000で起動
-    app.run(host="0.0.0.0", port=10000)
-
-# ===== Discord Bot 設定 =====
-TOKEN = os.getenv("DISCORD_TOKEN")
+# ===== 設定 =====
+TOKEN = os.getenv("DISCORD_TOKEN")  # Render環境変数を使う
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
-# ログ用チャンネルID
+# ログ用チャンネルID（ルカくんが取得したやつ）
 LOG_CHANNEL_ID = 1421840287000563724
 
 # ===== データベース初期化 =====
@@ -50,18 +45,17 @@ async def add_biome(ctx, name: str, x: int, y: int, z: int):
     conn.commit()
     await ctx.send(f"✅ バイオーム **{name}** を登録しました！（座標: {x}, {y}, {z}）")
 
-        # ログチャンネルに送信
+    # ログチャンネルに送信
     log_channel = bot.get_channel(LOG_CHANNEL_ID)
     if log_channel:
         embed = discord.Embed(
             title="📝 新しいバイオームが登録されました！",
-            description=f"{ctx.author.mention} さんが新しいバイオームを追加しました！",
+            description=f"**バイオーム:** {name}\n**座標:** ({x}, {y}, {z})\n**登録者:** {ctx.author}",
             color=0x95a5a6
         )
-        embed.add_field(name="🌍 バイオーム", value=str(name), inline=False)
-        embed.add_field(name="📍 座標", value=f"({x}, {y}, {z})", inline=False)
-        embed.add_field(name="👤 登録者", value=str(ctx.author), inline=False)
         await log_channel.send(embed=embed)
+    else:
+        print("⚠️ ログチャンネルが見つかりません")
 
 # ===== バイオーム一覧（最新5件） =====
 @bot.command()
@@ -112,8 +106,6 @@ async def all_biomes(ctx):
 
 # ===== Bot起動 =====
 if __name__ == "__main__":
-    # Flaskを別スレッドで起動
-    threading.Thread(target=run_web).start()
+    import threading
+    threading.Thread(target=lambda: app.run(host="0.0.0.0", port=10000)).start()
     bot.run(TOKEN)
-for command in bot.commands:
-    print(f"📌 読み込まれたコマンド: {command}")
