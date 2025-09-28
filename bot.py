@@ -50,13 +50,17 @@ async def add_biome(ctx, name: str, x: int, y: int, z: int):
     conn.commit()
     await ctx.send(f"✅ バイオーム **{name}** を登録しました！（座標: {x}, {y}, {z}）")
 
-    # ログチャンネルに送信
+        # ログチャンネルに送信
     log_channel = bot.get_channel(LOG_CHANNEL_ID)
     if log_channel:
-        embed = discord.Embed(title="📝 新しいバイオームが登録されました！", color=0x95a5a6)
-        embed.add_field(name="バイオーム", value=name, inline=False)
-        embed.add_field(name="座標", value=f"({x}, {y}, {z})", inline=False)
-        embed.add_field(name="登録者", value=str(ctx.author), inline=False)
+        embed = discord.Embed(
+            title="📝 新しいバイオームが登録されました！",
+            description=f"{ctx.author.mention} さんが新しいバイオームを追加しました！",
+            color=0x95a5a6
+        )
+        embed.add_field(name="🌍 バイオーム", value=str(name), inline=False)
+        embed.add_field(name="📍 座標", value=f"({x}, {y}, {z})", inline=False)
+        embed.add_field(name="👤 登録者", value=str(ctx.author), inline=False)
         await log_channel.send(embed=embed)
 
 # ===== バイオーム一覧（最新5件） =====
