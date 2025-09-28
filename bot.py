@@ -3,51 +3,31 @@ from discord.ext import commands
 import random
 import os
 
-TOKEN = os.getenv("DISCORD_TOKEN")
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix="!", intents=intents)
 
-bot = commands.Bot(command_prefix="!")
+omikuji_results = [
+    "🎉 大吉！今日は最高の一日になりそうです！",
+    "😊 中吉。いいことが起こる予感です。",
+    "😌 小吉。ちょっとした幸せが訪れるかも。",
+    "🤔 吉。悪くはない一日になりそうです。",
+    "😅 凶…今日は注意して過ごしましょう。",
+    "😱 大凶！？でも逆にレア運かも！？"
+]
 
 @bot.event
 async def on_ready():
-    print(f"Logged in as {bot.user}")
+    print(f"ログインしました: {bot.user}")
 
 @bot.command()
 async def omikuji(ctx):
-    fortunes = [
-        "大吉 🎉",
-        "中吉 😊",
-        "小吉 🍀",
-        "吉 ✨",
-        "末吉 🤔",
-        "凶 💦"
-    ]
-    
-    messages = [
-        "今日のゲーム、レアドロップが期待できるかも",
-        "スマホの充電は早めにしておくと安心",
-        "新しいアプリを探すと掘り出し物が見つかる予感",
-        "ソシャゲのログインボーナス、忘れないでね",
-        "画面の見すぎ注意。休憩で運気アップ",
-        "音楽を聴くと気分が切り替わりそう",
-        "チャットで誰かに声をかけると面白いことが起きるかも",
-        "スクショしておくと後で役立つ可能性大"
-    ]
+    result = random.choice(omikuji_results)
+    await ctx.send(result)
 
-    lucky_items = [
-        "イヤホン 🎧",
-        "スマホスタンド 📱",
-        "お気に入りのゲームソフト 🎮",
-        "キーボード ⌨️",
-        "お菓子 🍫",
-        "冷たい飲み物 🥤",
-        "ブランケット 🛋️",
-        "充電ケーブル 🔌"
-    ]
-    
-    result = random.choice(fortunes)
-    msg = random.choice(messages)
-    item = random.choice(lucky_items)
-    
-    await ctx.send(f"🔮 {result}\n💬 {msg}\n🎁 今日のラッキーアイテム: {item}")
-
-bot.run(TOKEN)
+if __name__ == "__main__":
+    TOKEN = os.environ.get("DISCORD_TOKEN")
+    if TOKEN is None:
+        print("環境変数 DISCORD_TOKEN が設定されていません")
+    else:
+        bot.run(TOKEN)
