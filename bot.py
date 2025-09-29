@@ -93,6 +93,9 @@ async def update_button():
 @bot.event
 async def on_ready():
     print(f"✅ ログイン完了: {bot.user}")
-    update_button.start()
+
+    # タスクが止まってたら再スタート
+    if not update_button.is_running():
+        update_button.start()
 
 bot.run(TOKEN)
