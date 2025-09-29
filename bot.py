@@ -6,7 +6,6 @@ import os
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-# チャンネルID
 INPUT_CHANNEL_ID = 1421839788272648223  # 入力用
 LOG_CHANNEL_ID = 1421840287000563724    # ログ用
 
@@ -14,7 +13,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ===== データベース =====
+# ===== DB =====
 conn = sqlite3.connect("biomes.db")
 c = conn.cursor()
 c.execute("""CREATE TABLE IF NOT EXISTS biomes (
@@ -26,17 +25,16 @@ c.execute("""CREATE TABLE IF NOT EXISTS biomes (
 )""")
 conn.commit()
 
-# ===== ボタンビュー =====
+# ===== View =====
 class BiomeView(View):
     def __init__(self):
-        super().__init__(timeout=None)  # ボタンが無効にならないようにする
+        super().__init__(timeout=None)  # timeout=None で永続化
 
     @discord.ui.button(label="バイオーム登録", style=discord.ButtonStyle.primary, custom_id="add_biome_button")
     async def add_biome_button(self, interaction: discord.Interaction, button: Button):
-        modal = BiomeModal()
-        await interaction.response.send_modal(modal)
+        await interaction.response.send_modal(BiomeModal())
 
-# ===== モーダル入力 =====
+# ===== Modal =====
 class BiomeModal(discord.ui.Modal, title="バイオーム登録"):
     name = discord.ui.TextInput(label="バイオーム名", placeholder="例: 森")
     x = discord.ui.TextInput(label="X座標", placeholder="例: 100")
@@ -56,14 +54,12 @@ class BiomeModal(discord.ui.Modal, title="バイオーム登録"):
                   (name, x, y, z, str(interaction.user)))
         conn.commit()
 
-        # 入力チャンネルに表示（30秒後に削除）
         await interaction.response.send_message(
             f"✅ バイオーム **{name}** を登録しました！（座標: {x}, {y}, {z}）",
             ephemeral=False,
             delete_after=30
         )
 
-        # ログチャンネルに送信（残す）
         log_channel = bot.get_channel(LOG_CHANNEL_ID)
         if log_channel:
             embed = discord.Embed(title="📝 新しいバイオームが登録されました！", color=0x95a5a6)
@@ -72,34 +68,35 @@ class BiomeModal(discord.ui.Modal, title="バイオーム登録"):
             embed.add_field(name="登録者", value=str(interaction.user), inline=False)
             await log_channel.send(embed=embed)
 
-# ===== 定期的にボタンを更新（編集方式） =====
+# ===== 更新タスク =====
 last_message = None
 
 @tasks.loop(minutes=1)
 async def update_button():
     global last_message
     channel = bot.get_channel(INPUT_CHANNEL_ID)
-    if channel:
-        view = BiomeView()
-        if last_message:  # 既存メッセージを編集
-            try:
-                await last_message.edit(
-                    content="⬇️ バイオームを登録するには下のボタンを押してください！",
-                    view=view
-                )
-                return
-            except Exception as e:
-                print(f"⚠️ メッセージ編集に失敗: {e}")
+    if not channel:
+        return
 
-        # 初回だけ新規投稿
-        last_message = await channel.send(
-            "⬇️ バイオームを登録するには下のボタンを押してください！",
-            view=view
-        )
+    if last_message:
+        try:
+            await last_message.edit(
+                content="⬇️ バイオームを登録するには下のボタンを押してください！"
+            )
+            return
+        except Exception as e:
+            print(f"⚠️ 編集失敗: {e}")
+
+    # 初回のみ新規送信
+    view = BiomeView()
+    last_message = await channel.send(
+        "⬇️ バイオームを登録するには下のボタンを押してください！",
+        view=view
+    )
 
 @bot.event
 async def on_ready():
     print(f"✅ ログイン完了: {bot.user}")
+    # View を永続登録（再起動後も custom_id ボタンが生きる）
+    bot.add_view(BiomeView())
     update_button.start()
-
-bot.run(TOKEN)
