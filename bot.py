@@ -72,7 +72,7 @@ class BiomeModal(discord.ui.Modal, title="バイオーム登録"):
             embed.add_field(name="登録者", value=str(interaction.user), inline=False)
             await log_channel.send(embed=embed)
 
-# ===== 定期的にボタンを更新 =====
+# ===== 定期的にボタンを更新（削除じゃなく編集方式） =====
 last_message = None
 
 @tasks.loop(minutes=1)
@@ -80,22 +80,26 @@ async def update_button():
     global last_message
     channel = bot.get_channel(INPUT_CHANNEL_ID)
     if channel:
-        # 前のボタンを消す
-        if last_message:
+        view = BiomeView()
+        if last_message:  # 既存メッセージを編集
             try:
-                await last_message.delete()
+                await last_message.edit(
+                    content="⬇️ バイオームを登録するには下のボタンを押してください！",
+                    view=view
+                )
+                return
             except:
                 pass
-        # 新しいボタンを投稿
-        view = BiomeView()
-        last_message = await channel.send("⬇️ バイオームを登録するには下のボタンを押してください！", view=view)
+        # 初回だけ新規投稿（通知抑制）
+        last_message = await channel.send(
+            "⬇️ バイオームを登録するには下のボタンを押してください！",
+            view=view,
+            suppress=True
+        )
 
 @bot.event
 async def on_ready():
     print(f"✅ ログイン完了: {bot.user}")
-
-    # タスクが止まってたら再スタート
-    if not update_button.is_running():
-        update_button.start()
+    update_button.start()
 
 bot.run(TOKEN)
