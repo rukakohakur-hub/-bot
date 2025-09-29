@@ -29,7 +29,7 @@ conn.commit()
 # ===== ボタンビュー =====
 class BiomeView(View):
     def __init__(self):
-        super().__init__(timeout=None)  # timeoutなしでずっと有効
+        super().__init__(timeout=None)  # ボタンが無効にならないようにする
 
     @discord.ui.button(label="バイオーム登録", style=discord.ButtonStyle.primary, custom_id="add_biome_button")
     async def add_biome_button(self, interaction: discord.Interaction, button: Button):
@@ -72,7 +72,7 @@ class BiomeModal(discord.ui.Modal, title="バイオーム登録"):
             embed.add_field(name="登録者", value=str(interaction.user), inline=False)
             await log_channel.send(embed=embed)
 
-# ===== 定期的にボタンを更新（編集＋再登録） =====
+# ===== 定期的にボタンを更新（編集方式） =====
 last_message = None
 
 @tasks.loop(minutes=1)
@@ -81,20 +81,20 @@ async def update_button():
     channel = bot.get_channel(INPUT_CHANNEL_ID)
     if channel:
         view = BiomeView()
-        if last_message:  # 既存メッセージを編集してViewを再登録
+        if last_message:  # 既存メッセージを編集
             try:
                 await last_message.edit(
                     content="⬇️ バイオームを登録するには下のボタンを押してください！",
                     view=view
                 )
                 return
-            except:
-                pass
-        # 初回だけ新規投稿（通知抑制）
+            except Exception as e:
+                print(f"⚠️ メッセージ編集に失敗: {e}")
+
+        # 初回だけ新規投稿
         last_message = await channel.send(
             "⬇️ バイオームを登録するには下のボタンを押してください！",
-            view=view,
-            suppress=True
+            view=view
         )
 
 @bot.event
