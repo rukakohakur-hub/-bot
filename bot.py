@@ -29,7 +29,7 @@ conn.commit()
 # ===== ボタンビュー =====
 class BiomeView(View):
     def __init__(self):
-        super().__init__(timeout=None)
+        super().__init__(timeout=None)  # 永続化のため timeout=None
 
     @discord.ui.button(label="バイオーム登録", style=discord.ButtonStyle.primary, custom_id="add_biome_button")
     async def add_biome_button(self, interaction: discord.Interaction, button: Button):
@@ -72,7 +72,7 @@ class BiomeModal(discord.ui.Modal, title="バイオーム登録"):
             embed.add_field(name="登録者", value=str(interaction.user), inline=False)
             await log_channel.send(embed=embed)
 
-# ===== 定期的にボタンを更新（編集方式） =====
+# ===== 定期的にボタンを更新 =====
 last_message = None
 
 @tasks.loop(minutes=1)
@@ -80,19 +80,22 @@ async def update_button():
     global last_message
     channel = bot.get_channel(INPUT_CHANNEL_ID)
     if channel:
-        view = BiomeView()
-        if last_message:  # すでにメッセージがある場合は編集
+        # 前のボタンを消す
+        if last_message:
             try:
-                await last_message.edit(content="⬇️ バイオームを登録するには下のボタンを押してください！", view=view)
-                return
+                await last_message.delete()
             except:
                 pass
-        # まだない場合は新規投稿
+        # 新しいボタンを投稿
+        view = BiomeView()
         last_message = await channel.send("⬇️ バイオームを登録するには下のボタンを押してください！", view=view)
 
+# ===== 起動時処理 =====
 @bot.event
 async def on_ready():
     print(f"✅ ログイン完了: {bot.user}")
+    # ここでビューを再登録（過去のボタンも有効にする）
+    bot.add_view(BiomeView())
     update_button.start()
 
 bot.run(TOKEN)
