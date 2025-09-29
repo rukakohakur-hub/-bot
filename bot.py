@@ -80,14 +80,16 @@ async def update_button():
 
     if last_message:
         try:
+            view = BiomeView()  # 編集時にもViewを渡す
             await last_message.edit(
-                content="⬇️ バイオームを登録するには下のボタンを押してください！"
+                content="⬇️ バイオームを登録するには下のボタンを押してください！",
+                view=view
             )
             return
         except Exception as e:
             print(f"⚠️ 編集失敗: {e}")
 
-    # 初回のみ新規送信
+    # 初回または失敗時のみ新規送信
     view = BiomeView()
     last_message = await channel.send(
         "⬇️ バイオームを登録するには下のボタンを押してください！",
@@ -97,6 +99,7 @@ async def update_button():
 @bot.event
 async def on_ready():
     print(f"✅ ログイン完了: {bot.user}")
-    # View を永続登録（再起動後も custom_id ボタンが生きる）
-    bot.add_view(BiomeView())
+    bot.add_view(BiomeView())  # 再起動後もボタンを有効化
     update_button.start()
+
+bot.run(TOKEN)
